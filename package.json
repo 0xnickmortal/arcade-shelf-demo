@@ -1,0 +1,12 @@
+{
+  "name": "arcade-shelf-vercel",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "mkdir dist && cp -r public/. dist"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  }
+}
+

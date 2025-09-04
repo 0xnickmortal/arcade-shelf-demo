@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade Shelf - Digital Game Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: #E0E0E0;
+        }
+        .font-black { font-weight: 900; }
+        .bg-gray-850 { background-color: #1a1a1a; }
+        .bg-gray-950 { background-color: #0d0d0d; }
+        .border-gray-750 { border-color: #383838; }
+        .progress-bar-filled {
+            background: linear-gradient(90deg, #10b981, #3b82f6);
+            transition: width 0.5s ease-in-out;
+        }
+        .cartridge {
+            position: relative;
+            background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+            border-radius: 12px 12px 4px 4px;
+            box-shadow: inset 0 -4px 8px rgba(0,0,0,0.4), 0 8px 12px rgba(0,0,0,0.3);
+            border: 2px solid #4a4a4a;
+            padding: 12px;
+            aspect-ratio: 3/4;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .cartridge::before {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70%;
+            height: 8px;
+            background: #1a1a1a;
+            border-radius: 0 0 4px 4px;
+        }
+        .cartridge-label {
+            background-size: cover;
+            background-position: center;
+            border-radius: 6px;
+            flex-grow: 1;
+            margin-bottom: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .cartridge-title {
+            font-size: 0.75rem;
+            line-height: 1.2;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+            text-align: center;
+        }
+        .token-badge {
+            background: linear-gradient(45deg, #10b981, #3b82f6);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 9999px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        /* Hype Meter Styles */
+        .hype-meter-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+        }
+        .hype-orb {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #a7c5ff, #3b82f6);
+            box-shadow: 0 0 20px #3b82f6, 0 0 40px #3b82f6, 0 0 60px #1e40af, inset 0 0 15px #a7c5ff;
+            animation: pulse 4s infinite ease-in-out;
+            position: relative;
+        }
+        .hype-orb::before, .hype-orb::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 2px solid rgba(167, 197, 255, 0.5);
+            animation: wave 3s infinite linear;
+        }
+        .hype-orb::after {
+            animation-delay: -1.5s;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(0.95); box-shadow: 0 0 20px #3b82f6, 0 0 40px #3b82f6, 0 0 60px #1e40af; }
+            50% { transform: scale(1.05); box-shadow: 0 0 30px #a7c5ff, 0 0 60px #3b82f6, 0 0 90px #1e40af; }
+        }
+        @keyframes wave {
+            0% { width: 100%; height: 100%; opacity: 1; }
+            100% { width: 300%; height: 300%; opacity: 0; }
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antiasaed">
+    <div id="app" class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-gray-950/80 backdrop-blur-sm sticky top-0 z-50 border-b border-gray-750">
+            <nav class="container mx-auto px-4 lg:px-8 flex items-center justify-between h-16">
+                <a href="#/" class="text-2xl font-black tracking-tighter text-white flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-400"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2Z"/><path d="M18 12H6"/><path d="M12 10v4"/></svg>
+                    Arcade Shelf
+                </a>
+                <div class="hidden md:flex items-center space-x-6 text-sm font-semibold">
+                    <a href="#/" class="text-gray-300 hover:text-white transition-colors nav-link" data-route="home">Store</a>
+                    <a href="#/market" class="text-gray-300 hover:text-white transition-colors nav-link" data-route="market">Second-hand Market</a>
+                     <a href="#/launches" class="text-gray-300 hover:text-white transition-colors nav-link" data-route="launches">Community Hubs</a>
+                    <a href="#/profile" class="text-gray-300 hover:text-white transition-colors nav-link" data-route="profile">My Library</a>
+                    <a href="#/generate" class="text-gray-300 hover:text-white transition-colors nav-link" data-route="generate">Create with AI</a>
+                    <a href="#/upload" class="text-gray-300 hover:text-white transition-colors nav-link" data-route="upload">For Developers</a>
+                </div>
+                <button id="mobile-menu-btn" class="md:hidden"><i data-lucide="menu"></i></button>
+            </nav>
+            <div id="mobile-menu" class="hidden md:hidden bg-gray-950 border-t border-gray-750 p-4">
+                 <a href="#/" class="block py-2 text-gray-300 hover:text-white nav-link" data-route="home">Store</a>
+                <a href="#/market" class="block py-2 text-gray-300 hover:text-white nav-link" data-route="market">Second-hand Market</a>
+                <a href="#/launches" class="block py-2 text-gray-300 hover:text-white nav-link" data-route="launches">Community Hubs</a>
+                <a href="#/profile" class="block py-2 text-gray-300 hover:text-white nav-link" data-route="profile">My Library</a>
+                <a href="#/generate" class="block py-2 text-gray-300 hover:text-white nav-link" data-route="generate">Create with AI</a>
+                <a href="#/upload" class="block py-2 text-gray-300 hover:text-white nav-link" data-route="upload">For Developers</a>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container mx-auto p-4 lg:p-8">
+            <div id="page-content"></div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-950 border-t border-gray-750 mt-16">
+            <div class="container mx-auto px-4 lg:px-8 py-6 text-center text-xs text-gray-500">
+                <p>&copy; 2025 Arcade Shelf. This is a fictional demo website.</p>
+                <p>All game concepts and assets are for demonstration purposes only.</p>
+            </div>
+        </footer>
+
+        <!-- Modal for Notifications -->
+        <div id="notification-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+            <div id="notification-content" class="bg-gray-850 rounded-lg shadow-xl p-6 w-11/12 max-w-md text-center transform scale-95 transition-transform duration-300">
+                <h3 id="notification-title" class="text-lg font-bold text-white mb-2"></h3>
+                <p id="notification-message" class="text-gray-300 mb-6"></p>
+                <button id="notification-close" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Got it</button>
+            </div>
+        </div>
+        
+        <!-- Modal for Game Play -->
+        <div id="game-play-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+            <div class="bg-gray-950 rounded-lg shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col p-4">
+                <div class="flex-shrink-0 flex justify-between items-center pb-2 mb-2 border-b border-gray-700">
+                    <h3 id="game-play-title" class="text-lg font-bold text-white">Now Playing</h3>
+                    <button id="game-play-close" class="text-gray-400 hover:text-white transition-colors"><i data-lucide="x-circle"></i></button>
+                </div>
+                <div class="flex-grow w-full h-full bg-black rounded-b-md overflow-hidden">
+                    <iframe id="game-play-iframe" class="w-full h-full border-0"></iframe>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const App = {
+            state: {
+                games: [
+                    { id: "g001", title: "Pixel Quest Legends", cover: "https://placehold.co/600x360/1a202c/ffffff?text=Pixel+Quest", priceUSD: 0, isFree: true, tags: ["Adventure", "Retro", "Platformer"], short: "A retro-style adventure through endless dungeons.", launchGoalMCap: 5000, currentMCap: 3200, tokenLaunched: false, tokenTicker: "$PXLQ", gameCode: null },
+                    { id: "g002", title: "Battle of Myths", cover: "https://placehold.co/600x360/4a5568/ffffff?text=Battle+of+Myths", priceUSD: 19.99, isFree: false, tags: ["Action", "PvP", "Arena"], short: "Fight legendary heroes in epic mythological arenas.", launchGoalMCap: 20000, currentMCap: 18250, tokenLaunched: false, tokenTicker: "$MYTH", gameCode: null },
+                    { id: "g003", title: "Chef Tycoon", cover: "https://placehold.co/600x360/f56565/ffffff?text=Chef+Tycoon", priceUSD: 4.99, isFree: false, tags: ["Simulation", "Casual"], short: "Build your culinary empire from food cart to franchise.", launchGoalMCap: 8000, currentMCap: 8200, tokenLaunched: true, tokenTicker: "$CHEF", gameCode: null },
+                    { id: "g004", title: "Nebula Explorers", cover: "https://placehold.co/600x360/4299e1/ffffff?text=Nebula+Explorers", priceUSD: 0, isFree: true, tags: ["Exploration", "Space", "Co-op"], short: "Co-op salvage runs across the galaxy.", launchGoalMCap: 12000, currentMCap: 11550, tokenLaunched: false, tokenTicker: "$NBLA", gameCode: null },
+                    { id: "g005", title: "RuneSmith Heroes", cover: "https://placehold.co/600x360/9f7aea/ffffff?text=RuneSmith", priceUSD: 0, isFree: true, tags: ["Strategy", "Deck-builder"], short: "Forge runes and outwit rivals in tactical battles.", launchGoalMCap: 6000, currentMCap: 6000, tokenLaunched: true, tokenTicker: "$RUNE", gameCode: null }
+                ],
+                userLibrary: [],
+                marketListings: [{ listingId: 'm001', seller: 'User123', priceUSD: 15.50, gameId: 'g002' }, { listingId: 'm002', seller: 'PlayerX', priceUSD: 3.00, gameId: 'g003' }],
+                filter: 'all',
+                isGenerating: false,
+                tokenCharts: {},
+                generatedGameCode: null,
+            },
+            init() {
+                this.router();
+                window.addEventListener('hashchange', this.router.bind(this));
+                this.attachEventListeners();
+            },
+            router() {
+                const hash = window.location.hash.slice(1) || '/';
+                const [path, param] = hash.split('/').filter(Boolean);
+                
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('text-white', 'font-bold');
+                    if (link.dataset.route === (path || 'home')) link.classList.add('text-white', 'font-bold');
+                });
+
+                switch (path) {
+                    case 'game': this.renderGameDetail(param); break;
+                    case 'market': this.renderMarket(); break;
+                    case 'profile': this.renderProfile(); break;
+                    case 'upload': this.renderUpload(); break;
+                    case 'launches': this.renderLaunches(); break;
+                    case 'hype': this.renderHypeHub(param); break;
+                    case 'generate': this.renderGenerator(); break;
+                    default: this.renderHome();
+                }
+                window.scrollTo(0, 0);
+                document.getElementById('mobile-menu').classList.add('hidden');
+            },
+            render(target, content) {
+                document.getElementById(target).innerHTML = content;
+                lucide.createIcons();
+            },
+            renderHome() {
+                 let filteredGames = this.state.games;
+                if(this.state.filter !== 'all') {
+                    filteredGames = this.state.games.filter(g => {
+                        if (this.state.filter === 'free') return g.isFree;
+                        if (this.state.filter === 'paid') return !g.isFree;
+                        if (this.state.filter === 'tokenLaunched') return g.tokenLaunched;
+                        return true;
+                    });
+                }
+
+                const gamesHtml = filteredGames.map(game => `
+                    <a href="#/game/${game.id}" class="group block bg-gray-850 rounded-lg overflow-hidden shadow-lg hover:shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-1">
+                        <div class="relative">
+                            <img src="${game.cover}" alt="${game.title}" class="w-full h-40 object-cover">
+                            ${game.tokenLaunched ? `<div class="absolute top-2 right-2 token-badge"><i data-lucide="flame" class="w-3 h-3"></i> Hype Launched</div>` : ''}
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-bold text-white truncate">${game.title}</h3>
+                            <p class="text-sm text-gray-400 mt-1 h-10">${game.short}</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <div class="flex items-center space-x-1">
+                                    ${game.tags.slice(0, 2).map(tag => `<span class="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded-full">${tag}</span>`).join('')}
+                                </div>
+                                <span class="text-base font-bold text-indigo-400">${game.isFree ? 'FREE' : `$${game.priceUSD.toFixed(2)}`}</span>
+                            </div>
+                        </div>
+                    </a>
+                `).join('');
+
+                this.render('page-content', `
+                    <div class="mb-8">
+                        <h1 class="text-4xl font-black text-white tracking-tighter">Storefront</h1>
+                        <p class="text-gray-400 mt-2">Discover new games and support your favorite developers.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-8">
+                        <button class="filter-btn px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${this.state.filter === 'all' ? 'bg-indigo-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}" data-filter="all">All</button>
+                        <button class="filter-btn px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${this.state.filter === 'free' ? 'bg-indigo-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}" data-filter="free">Free</button>
+                        <button class="filter-btn px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${this.state.filter === 'paid' ? 'bg-indigo-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}" data-filter="paid">Paid</button>
+                        <button class="filter-btn px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${this.state.filter === 'tokenLaunched' ? 'bg-indigo-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}" data-filter="tokenLaunched">Launched Hype</button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        ${gamesHtml}
+                    </div>
+                `);
+            },
+            renderMarket() {
+                const listingsHtml = this.state.marketListings.map(listing => {
+                    const game = this.state.games.find(g => g.id === listing.gameId);
+                    return `
+                        <div class="bg-gray-850 rounded-lg p-4 flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-4">
+                                <img src="${game.cover}" class="w-24 h-14 object-cover rounded-md">
+                                <div>
+                                    <a href="#/game/${game.id}" class="font-bold text-white hover:underline">${game.title}</a>
+                                    <p class="text-xs text-gray-400">Seller: ${listing.seller}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-lg font-bold text-indigo-400">$${listing.priceUSD.toFixed(2)}</p>
+                                <button class="mt-1 text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded-lg transition-colors buy-preowned-btn" data-listing-id="${listing.listingId}">Buy Pre-owned</button>
+                            </div>
+                        </div>
+                    `
+                }).join('');
+
+                this.render('page-content', `
+                    <div class="mb-8">
+                        <h1 class="text-4xl font-black text-white tracking-tighter">Second-hand Market</h1>
+                        <p class="text-gray-400 mt-2">Buy and sell pre-owned game certificates from other players.</p>
+                    </div>
+                    <div class="space-y-4">
+                        ${this.state.marketListings.length > 0 ? listingsHtml : '<p class="text-gray-500 text-center py-8">The market is empty right now.</p>'}
+                    </div>
+                `);
+            },
+            renderProfile() {
+                const libraryHtml = this.state.userLibrary.map(item => {
+                    const game = this.state.games.find(g => g.id === item.gameId);
+                    const isListed = item.listedPrice !== null;
+                    return `
+                        <div class="bg-gray-850 rounded-lg p-4 flex flex-col items-center text-center relative">
+                             ${isListed ? `<div class="absolute top-2 right-2 text-xs bg-yellow-500 text-black font-semibold px-2 py-1 rounded-full">LISTED</div>` : ''}
+                            <div class="w-40 cartridge mb-4">
+                                <div class="cartridge-label" style="background-image: url('${game.cover}')"></div>
+                                <div class="cartridge-title">${game.title}</div>
+                            </div>
+                            <h3 class="font-bold text-white truncate w-full">${game.title}</h3>
+                            <div class="mt-4 flex flex-col w-full space-y-2">
+                                <button class="w-full text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-lg transition-colors play-game-btn" data-game-id="${game.id}" ${!game.gameCode ? 'disabled opacity-50' : ''}>Play</button>
+                                <button class="w-full text-sm bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-3 rounded-lg transition-colors list-sale-btn" data-cert-id="${item.certificateId}" ${isListed ? 'disabled' : ''}>
+                                    ${isListed ? `Listed for $${item.listedPrice.toFixed(2)}` : 'List for Sale'}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                this.render('page-content', `
+                    <div class="mb-8">
+                        <h1 class="text-4xl font-black text-white tracking-tighter">My Library</h1>
+                        <p class="text-gray-400 mt-2">Your personal collection of game ownership certificates.</p>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        ${this.state.userLibrary.length > 0 ? libraryHtml : ''}
+                    </div>
+                     ${this.state.userLibrary.length === 0 ? '<div class="text-center py-16 border-2 border-dashed border-gray-700 rounded-lg"><p class="text-gray-500">Your library is empty.</p><p class="text-gray-400 mt-2">Get or buy games from the store to start your collection.</p><a href="#/" class="mt-4 inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Go to Store</a></div>' : ''}
+                `);
+            },
+            renderLaunches() {
+                const launchedGames = this.state.games.filter(g => g.tokenLaunched);
+                 const launchedHtml = launchedGames.map(game => `
+                    <a href="#/hype/${game.id}" class="bg-gray-850 p-4 rounded-lg flex items-center justify-between gap-4 hover:bg-gray-800 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <img src="${game.cover}" class="w-24 h-14 object-cover rounded-md">
+                            <div>
+                                <h3 class="font-bold text-white">${game.title}</h3>
+                                <p class="text-sm text-indigo-400">Total Hype: ${game.currentMCap.toLocaleString()}</p>
+                            </div>
+                        </div>
+                        <button class="text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">View Hub</button>
+                    </a>`).join('');
+
+                this.render('page-content', `
+                    <div class="mb-8">
+                        <h1 class="text-4xl font-black text-white tracking-tighter">Community Hubs</h1>
+                        <p class="text-gray-400 mt-2">Join the community for games that have successfully launched their Hype.</p>
+                    </div>
+                    <div class="space-y-4">
+                        ${launchedGames.length > 0 ? launchedHtml : '<p class="text-gray-500 text-center py-8">No games have launched a Community Hub yet.</p>'}
+                    </div>
+                `);
+            },
+            renderGameDetail(id) {
+                const game = this.state.games.find(g => g.id === id);
+                if (!game) { this.render('page-content', `<p>Game not found.</p>`); return; }
+
+                const isInLibrary = this.state.userLibrary.some(item => item.gameId === game.id);
+                const launchPercentage = Math.min(100, (game.currentMCap / game.launchGoalMCap) * 100);
+
+                let actionButton = '';
+                if (isInLibrary) {
+                    if (game.gameCode) {
+                        actionButton = `<button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-colors play-game-btn" data-game-id="${game.id}">Play Game</button>`;
+                    } else {
+                        actionButton = `<a href="#/profile" class="w-full text-center bg-gray-600 text-white font-bold py-3 px-4 rounded-lg block">View Certificate</a>`;
+                    }
+                } else {
+                     actionButton = `<button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-colors get-game-btn" data-game-id="${game.id}">${game.isFree ? 'Get Game' : 'Buy Game'}</button>`;
+                }
+
+
+                const launchSection = game.tokenLaunched ? `
+                    <div class="bg-gray-850 p-6 rounded-lg shadow-lg border border-green-500">
+                        <div class="flex items-center gap-3 mb-2">
+                            <i data-lucide="flame" class="text-green-400"></i>
+                            <h3 class="font-bold text-white text-lg">Hype Launched!</h3>
+                        </div>
+                        <p class="text-sm text-gray-300 mb-4">The community successfully launched the Hype for this game.</p>
+                        <a href="#/hype/${game.id}" class="w-full text-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors block">Join the Hype</a>
+                    </div>
+                ` : `
+                     <div class="bg-gray-850 p-6 rounded-lg shadow-lg">
+                        <h3 class="font-bold text-white mb-2">Hype Launchpad</h3>
+                        <p class="text-sm text-gray-400 mb-4">Contribute to the launch pool to generate Hype and support the developer.</p>
+                        <div class="bg-gray-700 rounded-full h-4 w-full overflow-hidden mb-2">
+                            <div class="progress-bar-filled h-4" style="width: ${launchPercentage}%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-400 mb-4">
+                            <span>$${game.currentMCap.toLocaleString()}</span>
+                            <span>Goal: $${game.launchGoalMCap.toLocaleString()}</span>
+                        </div>
+                        <div class="flex gap-2">
+                           <input type="number" id="contribute-amount" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="USD Amount">
+                           <button class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg transition-colors contribute-btn" data-game-id="${game.id}">Boost Hype</button>
+                        </div>
+                    </div>
+                `;
+
+                this.render('page-content', `
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2">
+                            <img src="${game.cover}" alt="${game.title}" class="rounded-lg w-full object-cover mb-4 shadow-2xl">
+                            <h1 class="text-4xl font-black text-white tracking-tighter mb-2">${game.title}</h1>
+                            <div class="flex flex-wrap gap-2 mb-4">${game.tags.map(tag => `<span class="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded-full">${tag}</span>`).join('')}</div>
+                            <p class="text-gray-300 leading-relaxed">${game.short} (Full description here...)</p>
+                        </div>
+                        <div class="lg:col-span-1 space-y-6">
+                            <div class="bg-gray-850 p-6 rounded-lg shadow-lg">
+                                ${isInLibrary && !game.gameCode ? `<p class="text-center text-green-400 font-bold mb-4">In your library!</p>` : ''}
+                                ${!isInLibrary ? `<p class="text-2xl font-bold text-white text-center mb-4">${game.isFree ? 'FREE' : `$${game.priceUSD.toFixed(2)}`}</p>`: ''}
+                                ${actionButton}
+                            </div>
+                            ${launchSection}
+                        </div>
+                    </div>
+                `);
+            },
+            renderHypeHub(id) {
+                const game = this.state.games.find(g => g.id === id);
+                if (!game || !game.tokenLaunched) { this.render('page-content', `<p>Hype Hub not launched or game not found.</p>`); return; }
+                
+                const mockSupporters = [
+                    { name: 'PixelMaster', hype: 125000 },
+                    { name: 'SynthwaveFan', hype: 98000 },
+                    { name: 'RetroGamer', hype: 76000 },
+                    { name: 'SpeedrunnerX', hype: 54000 },
+                    { name: 'IndieLover', hype: 32000 },
+                ];
+
+                const mockChat = [
+                    { user: 'Dev_Main', msg: 'Thanks for all the support everyone! We just pushed a new piece of concept art.'},
+                    { user: 'PixelMaster', msg: 'This game is gonna be epic!'},
+                    { user: 'SynthwaveFan', msg: 'Just got more hype! To the moon!'},
+                    { user: 'CasualPlayer', msg: 'What does Hype do?'},
+                    { user: 'RetroGamer', msg: 'It shows our support! And we get rewards later.'}
+                ]
+
+                this.render('page-content', `
+                    <div class="text-center mb-8">
+                        <h1 class="text-5xl font-black text-white tracking-tighter">${game.title}</h1>
+                        <p class="text-gray-400 mt-2 text-lg">Community Hype Hub</p>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-1 flex flex-col gap-8">
+                             <div class="bg-gray-850 p-6 rounded-lg shadow-lg text-center">
+                                <h3 class="font-bold text-lg mb-4 text-indigo-400">Total Hype</h3>
+                                <p class="text-4xl font-black text-white">${game.currentMCap.toLocaleString()}</p>
+                            </div>
+                            <div class="bg-gray-850 p-6 rounded-lg shadow-lg">
+                                <h3 class="font-bold text-lg mb-4">Top Supporters</h3>
+                                <ul class="space-y-3">
+                                    ${mockSupporters.map((s, i) => `
+                                        <li class="flex items-center justify-between text-sm">
+                                            <span class="text-gray-300"><span class="font-bold text-white">${i+1}.</span> ${s.name}</span>
+                                            <span class="font-bold text-indigo-400">${s.hype.toLocaleString()}</span>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-1 bg-gray-900/50 p-6 rounded-lg shadow-2xl flex flex-col justify-center items-center">
+                            <div class="hype-meter-container">
+                                <div class="hype-orb"></div>
+                            </div>
+                            <p class="text-gray-400 text-sm mt-4">The community's energy for this game!</p>
+                        </div>
+
+                        <div class="lg:col-span-1 flex flex-col gap-8">
+                            <div class="bg-gray-850 p-6 rounded-lg shadow-lg">
+                                <h3 class="font-bold text-lg mb-4">Join the Hype</h3>
+                                 <div class="flex gap-2 mb-4">
+                                    <button class="w-full py-2 text-center bg-green-600 hover:bg-green-700 rounded-lg font-bold get-hype-btn" data-game-id="${game.id}">Get Hype</button>
+                                    <button class="w-full py-2 text-center bg-yellow-600 hover:bg-yellow-700 rounded-lg font-bold cash-in-btn" data-game-id="${game.id}">Cash In</button>
+                                </div>
+                                <input type="number" id="hype-amount" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 mb-2 text-white" placeholder="Amount in USD">
+                                <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg" disabled>Confirm (Coming Soon)</button>
+                            </div>
+                            <div class="bg-gray-850 p-6 rounded-lg shadow-lg">
+                                <h3 class="font-bold text-lg mb-4">Developer's Log</h3>
+                                <div class="text-sm bg-gray-900 p-3 rounded-lg">
+                                    <p class="font-bold text-indigo-400">Dev_Main:</p>
+                                    <p class="text-gray-300">Wow, the support is incredible! We're using these funds to hire a sound designer. Here's a sneak peek at the main character!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            },
+            renderGenerator() {
+                this.render('page-content', `
+                    <div class="text-center mb-12">
+                        <h1 class="text-5xl font-black text-white tracking-tighter">Create a Game with AI</h1>
+                        <p class="text-gray-400 mt-4 max-w-2xl mx-auto">Describe the game you want to create. Gemini will generate the complete code for a playable, web-based game. Be descriptive! Try "a simple breakout-style game with a space theme" or "a flappy bird clone where you control a bat".</p>
+                    </div>
+                    <div class="max-w-4xl mx-auto">
+                        <div class="bg-gray-850 p-4 rounded-lg flex flex-col md:flex-row gap-2">
+                           <textarea id="game-prompt" class="w-full flex-grow bg-gray-700 border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g., A simple snake game with neon aesthetics..." rows="3"></textarea>
+                           <button id="generate-game-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-lg flex items-center justify-center gap-2">
+                                <i data-lucide="sparkles"></i> Generate Game
+                           </button>
+                        </div>
+                    </div>
+                    <div id="game-preview-container" class="mt-8 hidden">
+                         <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-2xl font-bold text-white">Generated Game Preview</h2>
+                            <button id="upload-generated-game-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"><i data-lucide="upload"></i> Upload this Game</button>
+                        </div>
+                        <div class="aspect-video w-full bg-gray-950 rounded-lg overflow-hidden border-4 border-gray-700">
+                           <iframe id="game-preview-iframe" class="w-full h-full"></iframe>
+                        </div>
+                    </div>
+                `);
+            },
+            renderUpload() {
+                this.render('page-content', `
+                    <div class="max-w-2xl mx-auto">
+                        <h1 class="text-4xl font-black text-white tracking-tighter mb-2">Developer Console</h1>
+                        <p class="text-gray-400 mb-8">Upload your game to the Arcade Shelf platform.</p>
+                        <form id="upload-form" class="bg-gray-850 p-8 rounded-lg space-y-6">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-300 mb-2">Game Title</label>
+                                <input type="text" id="game-title" class="w-full bg-gray-700 border-gray-600 rounded-lg px-3 py-2 text-white" required>
+                            </div>
+                             <div>
+                                <label class="block text-sm font-bold text-gray-300 mb-2">Hype Ticker (e.g., $MYGAME)</label>
+                                <input type="text" id="game-ticker" class="w-full bg-gray-700 border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="$MYGAME" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-300 mb-2">Short Description</label>
+                                <textarea id="game-short" rows="3" class="w-full bg-gray-700 border-gray-600 rounded-lg px-3 py-2 text-white" required></textarea>
+                            </div>
+                             <div>
+                                <label class="block text-sm font-bold text-gray-300 mb-2">Price (USD, 0 for Free)</label>
+                                <input type="number" id="game-price" min="0" step="0.01" value="0" class="w-full bg-gray-700 border-gray-600 rounded-lg px-3 py-2 text-white">
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg">Submit Game for Launch</button>
+                        </form>
+                    </div>
+                `);
+            },
+            attachEventListeners() {
+                document.body.addEventListener('click', e => {
+                    if (e.target.closest('#mobile-menu-btn')) document.getElementById('mobile-menu').classList.toggle('hidden');
+                    if (e.target.matches('.filter-btn')) { this.state.filter = e.target.dataset.filter; this.renderHome(); }
+                    if (e.target.matches('.get-game-btn')) this.handleGetGame(e.target.dataset.gameId);
+                    if (e.target.matches('.contribute-btn')) this.handleContribute(e.target.dataset.gameId);
+                    if (e.target.matches('.list-sale-btn')) this.handleListForSale(e.target.dataset.certId);
+                    if (e.target.matches('.buy-preowned-btn')) this.handleBuyPreowned(e.target.dataset.listingId);
+                    if (e.target.matches('.play-game-btn')) this.handlePlayGame(e.target.dataset.gameId);
+                    if (e.target.matches('.get-hype-btn')) this.handleGetHype(e.target.dataset.gameId);
+                    if (e.target.matches('.cash-in-btn')) this.handleCashIn(e.target.dataset.gameId);
+                    if (e.target.matches('#notification-close')) this.hideNotification();
+                    if (e.target.closest('#game-play-close')) this.hideGame();
+                    if (e.target.closest('#generate-game-btn')) this.handleGenerateGame();
+                    if (e.target.closest('#upload-generated-game-btn')) this.handleUploadGeneratedGame();
+                });
+                 document.body.addEventListener('submit', e => {
+                    if(e.target.id === 'upload-form') {
+                        e.preventDefault();
+                        this.handleGameUpload(e.target);
+                    }
+                })
+            },
+            handleGetHype(gameId) {
+                const game = this.state.games.find(g => g.id === gameId);
+                const amountInput = document.getElementById('hype-amount');
+                const amount = parseFloat(amountInput.value);
+                if (!amount || amount <= 0) {
+                    this.showNotification('Invalid Amount', 'Please enter a valid amount to get Hype.');
+                    return;
+                }
+                game.currentMCap += amount;
+                amountInput.value = '';
+                this.showNotification('Success!', `You got ${amount.toLocaleString()} Hype for "${game.title}"!`);
+                this.renderHypeHub(gameId);
+            },
+            handleCashIn(gameId) {
+                const game = this.state.games.find(g => g.id === gameId);
+                const amountInput = document.getElementById('hype-amount');
+                const amount = parseFloat(amountInput.value);
+
+                if (!amount || amount <= 0) {
+                    this.showNotification('Invalid Amount', 'Please enter a valid amount to cash in.');
+                    return;
+                }
+                if (amount > game.currentMCap) {
+                    this.showNotification('Not Enough Hype', 'Cannot cash in more Hype than the total available.');
+                    return;
+                }
+                game.currentMCap -= amount;
+                amountInput.value = '';
+                this.showNotification('Success!', `You cashed in ${amount.toLocaleString()} Hype from "${game.title}".`);
+                this.renderHypeHub(gameId);
+            },
+            handleGetGame(gameId) {
+                const game = this.state.games.find(g => g.id === gameId);
+                this.state.userLibrary.push({ gameId: game.id, certificateId: 'cert-' + Date.now(), listedPrice: null });
+                this.showNotification('Success!', `"${game.title}" certificate added to your library.`);
+                this.router();
+            },
+            handleContribute(gameId) {
+                const game = this.state.games.find(g => g.id === gameId);
+                const amount = parseFloat(document.getElementById('contribute-amount').value);
+                if (!amount || amount <= 0) {
+                    this.showNotification('Invalid Amount', 'Please enter a valid amount to contribute.');
+                    return;
+                }
+                game.currentMCap += amount;
+                if (game.currentMCap >= game.launchGoalMCap) {
+                    game.tokenLaunched = true;
+                    this.showNotification('Hype Launched!', `The Community Hub for "${game.title}" is now live!`);
+                } else {
+                    this.showNotification('Hype Boosted', `Thank you for contributing $${amount} to the launch of "${game.title}".`);
+                }
+                this.router();
+            },
+            handleListForSale(certificateId) {
+                const price = prompt("Enter the price you want to list this for (USD):", "9.99");
+                if (price !== null && !isNaN(price) && parseFloat(price) > 0) {
+                    const priceUSD = parseFloat(price);
+                    const itemInLibrary = this.state.userLibrary.find(item => item.certificateId === certificateId);
+                    itemInLibrary.listedPrice = priceUSD;
+                    
+                    this.state.marketListings.push({
+                        listingId: 'm-' + Date.now(),
+                        seller: 'You',
+                        priceUSD: priceUSD,
+                        gameId: itemInLibrary.gameId
+                    });
+
+                    this.showNotification('Listed!', 'Your certificate is now on the second-hand market.');
+                    this.renderProfile();
+                } else if(price !== null) {
+                    this.showNotification('Invalid Price', 'Please enter a valid price.');
+                }
+            },
+            handleBuyPreowned(listingId) {
+                const listingIndex = this.state.marketListings.findIndex(l => l.listingId === listingId);
+                if (listingIndex > -1) {
+                    const listing = this.state.marketListings[listingIndex];
+                    const game = this.state.games.find(g => g.id === listing.gameId);
+
+                    if(this.state.userLibrary.some(item => item.gameId === listing.gameId)){
+                        this.showNotification('Already Owned', `You already have a certificate for "${game.title}".`);
+                        return;
+                    }
+                    
+                    this.state.marketListings.splice(listingIndex, 1);
+                    this.state.userLibrary.push({
+                        gameId: listing.gameId,
+                        certificateId: 'cert-' + Date.now(),
+                        listedPrice: null
+                    });
+                    
+                    this.showNotification(
+                        'Purchase Complete',
+                        `You are now the owner of the certificate for "${game.title}". It's in your library.`
+                    );
+                    this.renderMarket();
+                }
+            },
+            handleGameUpload(form) {
+                const title = form['game-title'].value;
+                const newGame = {
+                    id: 'g' + (this.state.games.length + 1).toString().padStart(3, '0'),
+                    title: title,
+                    tokenTicker: form['game-ticker'].value,
+                    cover: `https://placehold.co/600x360/333/fff?text=${encodeURIComponent(title)}`,
+                    priceUSD: parseFloat(form['game-price'].value),
+                    isFree: parseFloat(form['game-price'].value) === 0,
+                    tags: ["New", "Indie", "AI-Generated"],
+                    short: form['game-short'].value,
+                    launchGoalMCap: 10000,
+                    currentMCap: 0,
+                    tokenLaunched: false,
+                    gameCode: sessionStorage.getItem('generatedGameCode') || null
+                };
+                
+                sessionStorage.removeItem('generatedGameCode');
+                this.state.games.push(newGame);
+                this.showNotification('Game Submitted', `"${newGame.title}" is now pending launch.`);
+                window.location.hash = `#/game/${newGame.id}`;
+            },
+            async handleGenerateGame() {
+                 const button = document.getElementById('generate-game-btn');
+                const promptEl = document.getElementById('game-prompt');
+                const userPrompt = promptEl.value;
+                if (!userPrompt) {
+                    this.showNotification('Missing Prompt', 'Please describe the game you want to create.');
+                    return;
+                }
+                
+                const generatedCode = await this.callGemini(userPrompt, button);
+                if (generatedCode) {
+                    this.state.generatedGameCode = generatedCode;
+                    document.getElementById('game-preview-container').classList.remove('hidden');
+                    const iframe = document.getElementById('game-preview-iframe');
+                    iframe.srcdoc = generatedCode;
+                }
+            },
+            handleUploadGeneratedGame() {
+                if (!this.state.generatedGameCode) {
+                    this.showNotification('Error', 'No game code was generated.');
+                    return;
+                }
+                const titleMatch = this.state.generatedGameCode.match(/<title>(.*?)<\/title>/);
+                const title = titleMatch ? titleMatch[1] : 'AI-Generated Game';
+                const ticker = '$' + title.replace(/\s/g, '').substring(0, 4).toUpperCase();
+                
+                sessionStorage.setItem('generatedGameTitle', title);
+                sessionStorage.setItem('generatedGameTicker', ticker);
+                sessionStorage.setItem('generatedGameDesc', 'This game was generated by the Arcade Shelf AI. Play the preview on its page!');
+                sessionStorage.setItem('generatedGameCode', this.state.generatedGameCode);
+
+                window.location.hash = '#/upload';
+                 setTimeout(() => {
+                    if (sessionStorage.getItem('generatedGameTitle')) {
+                        document.getElementById('game-title').value = sessionStorage.getItem('generatedGameTitle');
+                        document.getElementById('game-ticker').value = sessionStorage.getItem('generatedGameTicker');
+                        document.getElementById('game-short').value = sessionStorage.getItem('generatedGameDesc');
+                        sessionStorage.removeItem('generatedGameTitle');
+                        sessionStorage.removeItem('generatedGameTicker');
+                        sessionStorage.removeItem('generatedGameDesc');
+                    }
+                }, 100);
+            },
+            handlePlayGame(gameId) {
+                const game = this.state.games.find(g => g.id === gameId);
+                if (game && game.gameCode) {
+                    document.getElementById('game-play-title').textContent = `Now Playing: ${game.title}`;
+                    const iframe = document.getElementById('game-play-iframe');
+                    iframe.srcdoc = game.gameCode;
+                    const modal = document.getElementById('game-play-modal');
+                    modal.classList.remove('hidden');
+                    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+                }
+            },
+            hideGame() {
+                const modal = document.getElementById('game-play-modal');
+                const iframe = document.getElementById('game-play-iframe');
+                iframe.srcdoc = ''; // Stop the game
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            },
+            async callGemini(prompt, buttonElement) {
+                if (this.state.isGenerating) return;
+                this.state.isGenerating = true;
+
+                const originalButtonContent = buttonElement.innerHTML;
+                buttonElement.innerHTML = `<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg><span>Generating...</span>`;
+                buttonElement.disabled = true;
+
+                // The URL now points to our Vercel serverless function
+                const apiUrl = `/api/generate-game`;
+                const payload = { prompt: prompt };
+
+                try {
+                    const response = await fetch(apiUrl, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify(payload) 
+                    });
+                    
+                    if (!response.ok) {
+                         let errorMessage = `Server Error: ${response.status} ${response.statusText}`;
+                         const contentType = response.headers.get("content-type");
+                         if (contentType && contentType.includes("application/json")) {
+                             const errorResult = await response.json();
+                             errorMessage = errorResult.error || errorMessage;
+                         } else {
+                             errorMessage = await response.text() || errorMessage;
+                         }
+                         throw new Error(errorMessage);
+                    }
+
+                    const result = await response.json();
+                    const text = result.gameCode;
+                    if (!text) throw new Error("No game code in API response.");
+                    return text.trim();
+                } catch (error) {
+                    console.error("API call failed:", error);
+                    this.showNotification('Generation Error', error.message);
+                    return null;
+                } finally {
+                    this.state.isGenerating = false;
+                    buttonElement.innerHTML = originalButtonContent;
+                    buttonElement.disabled = false;
+                }
+            },
+            showNotification(title, message) {
+                document.getElementById('notification-title').textContent = title;
+                document.getElementById('notification-message').textContent = message;
+                const modal = document.getElementById('notification-modal');
+                modal.classList.remove('hidden');
+                setTimeout(() => modal.classList.remove('opacity-0'), 10);
+            },
+            hideNotification() {
+                const modal = document.getElementById('notification-modal');
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+</body>
+</html>
+
