@@ -2,7 +2,11 @@
   "name": "arcade-shelf-vercel",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "build": "cp -r public/. vercel/output/static"
+  },
   "dependencies": {
     "node-fetch": "^2.7.0"
   }
 }
+
