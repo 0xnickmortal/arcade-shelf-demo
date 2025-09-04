@@ -4,16 +4,7 @@
     {
       "src": "api/generate-game.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "public/index.html",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/public/index.html"
     }
   ]
 }
+
